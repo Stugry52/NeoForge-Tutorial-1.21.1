@@ -1,0 +1,7 @@
+{
+  "type": "tutorialmod:remove_item",
+  "conditions": [
+
+  ],
+  "item": "minecraft:enchanted_book"
+}
