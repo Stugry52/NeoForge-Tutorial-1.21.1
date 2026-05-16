@@ -3,9 +3,11 @@ package net.stugry.tutorialmod.datagen;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.*;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.ItemLike;
-import net.neoforged.neoforge.common.conditions.ICondition;
+import net.neoforged.neoforge.common.conditions.FalseCondition;
 import net.neoforged.neoforge.common.conditions.IConditionBuilder;
 import net.stugry.tutorialmod.TutorialMod;
 import net.stugry.tutorialmod.block.ModBlocks;
@@ -14,8 +16,8 @@ import net.stugry.tutorialmod.item.ModItems;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class ModRecepeProvider extends RecipeProvider implements IConditionBuilder {
-    public ModRecepeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
+public class ModRecipeProvider extends RecipeProvider implements IConditionBuilder {
+    public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, registries);
     }
 
