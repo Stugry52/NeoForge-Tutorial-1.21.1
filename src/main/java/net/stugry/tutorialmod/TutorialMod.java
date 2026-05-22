@@ -112,12 +112,6 @@ public class TutorialMod {
         }
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-
-    }
-
     @SubscribeEvent
     public void onVillagerTrades(VillagerTradesEvent event) {
         if (event.getType().equals(VillagerProfession.LIBRARIAN)) {
@@ -220,7 +214,6 @@ public class TutorialMod {
 
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event){
-
         if (!event.getLevel().isClientSide() && event.getEntity() instanceof ItemEntity itemEntity){
             var owner = itemEntity.getOwner();
 
