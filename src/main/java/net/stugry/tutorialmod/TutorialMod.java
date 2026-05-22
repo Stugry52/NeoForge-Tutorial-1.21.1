@@ -30,6 +30,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 import net.neoforged.neoforge.registries.*;
 import net.stugry.tutorialmod.block.ModBlocks;
+import net.stugry.tutorialmod.component.ModDataComponents;
 import net.stugry.tutorialmod.item.ModCreativeModeTabs;
 import net.stugry.tutorialmod.item.ModItems;
 import org.slf4j.Logger;
@@ -86,6 +87,8 @@ public class TutorialMod {
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
+
+        ModDataComponents.register(modEventBus);
 
         LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
 
