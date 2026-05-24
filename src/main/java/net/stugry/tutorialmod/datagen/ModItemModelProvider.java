@@ -30,6 +30,12 @@ public class ModItemModelProvider extends ItemModelProvider {
         wallItem(ModBlocks.BISMUTH_WALL, ModBlocks.BISMUTH_BLOCK);
 
         basicItem(ModBlocks.BISMUTH_DOOR.asItem());
+
+        handheldItem(ModItems.BISMUTH_SWORD.get());
+        handheldItem(ModItems.BISMUTH_PICKAXE.get());
+        handheldItem(ModItems.BISMUTH_SHOVEL.get());
+        handheldItem(ModItems.BISMUTH_AXE.get());
+        handheldItem(ModItems.BISMUTH_HOE.get());
     }
 
     public void buttonItem(DeferredBlock<?> block, DeferredBlock<Block> baseBlock) {
