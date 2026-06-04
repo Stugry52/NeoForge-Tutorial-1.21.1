@@ -87,6 +87,9 @@ public class ModItems {
             () -> new AnimalArmorItem(ModArmorMaterials.BISMUTH_ARMOR_MATERIAL, AnimalArmorItem.BodyType.EQUESTRIAN,
                     false, new Item.Properties().stacksTo(1)));
 
+    public static final DeferredItem<Item> KAUPEN_SMITHING_TEMPLATE = ITEMS.register("kaupen_armor_trim_smithing_template",
+            () -> SmithingTemplateItem.createArmorTrimTemplate(ResourceLocation.fromNamespaceAndPath(TutorialMod.MOD_ID, "kaupen")));
+
     public static void register(IEventBus eventBus){
         ITEMS.register(eventBus);
     }
