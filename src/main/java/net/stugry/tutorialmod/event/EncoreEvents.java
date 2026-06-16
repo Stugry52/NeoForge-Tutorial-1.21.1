@@ -1,6 +1,12 @@
 package net.stugry.tutorialmod.event;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.player.Player;
@@ -9,7 +15,9 @@ import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -18,6 +26,8 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 import net.stugry.tutorialmod.TutorialMod;
+
+import static net.minecraft.world.Containers.dropItemStack;
 
 @EventBusSubscriber(modid = TutorialMod.MOD_ID)
 public class EncoreEvents {
@@ -144,4 +154,47 @@ public class EncoreEvents {
             }
         }
     }
+
+    // Перехват события появления визера в мире
+    @SubscribeEvent
+    public static void onWitherEntityJoin(EntityJoinLevelEvent event){
+        if (event.getEntity() instanceof WitherBoss witherBoss && !event.getLevel().isClientSide){
+            Level level = event.getLevel();
+
+            // Отменяем призыв визера
+            if (!level.dimension().equals(Level.NETHER)) {
+
+                BlockPos pos = witherBoss.blockPosition();
+
+                event.setCanceled(true);
+
+                // Выдаем, ввиде дропа, использованые предметы
+                dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(Items.WITHER_SKELETON_SKULL, 3));
+
+               BlockPos centerPos = pos.below();
+               BlockState centerState = level.getBlockState(centerPos);
+               ItemStack material = new ItemStack(Blocks.SOUL_SAND);
+               if (centerState.is(Blocks.SOUL_SOIL)){
+                   material = new ItemStack(Blocks.SOUL_SOIL);
+               }
+
+               material.setCount(4);
+                dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), material);
+
+                // Выводим текст игрокам вблизи призыва Визера
+                level.players().stream()
+                        .filter(p -> p.distanceToSqr(witherBoss.position()) < 25)
+                        .forEach(p -> {
+                            if (p instanceof ServerPlayer serverPlayer) {
+                                serverPlayer.displayClientMessage(
+                                        Component.literal("Ритуал не возможен вне Ада!"), true
+                                );
+                            }
+                        });
+
+                level.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
+            }
+        }
+    }
+
 }
