@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.VillagerProfession;
@@ -170,131 +171,74 @@ public class EncoreEvents {
         }
     }
 
+
+
+    // Полу патерн визера для проверки
+    public static BlockPattern WITHER_PATTERN = BlockPatternBuilder.start()
+            .aisle("###", "~#~")
+            .where('#', BlockInWorld.hasState(s -> s.is(BlockTags.WITHER_SUMMON_BASE_BLOCKS)))
+            .where('~', BlockInWorld.hasState(s -> s.is(Blocks.AIR)))
+            .build();
+
     // Перехват события появления визера в мире
-//    @SubscribeEvent
-//    public static void onWitherEntityJoin(EntityJoinLevelEvent event){
-//        if (event.getEntity() instanceof WitherBoss witherBoss && !event.getLevel().isClientSide){
-//            Level level = event.getLevel();
-//
-//            // Отменяем призыв визера
-//            if (!level.dimension().equals(Level.NETHER)) {
-//
-//                BlockPos pos = witherBoss.blockPosition();
-//
-//                event.setCanceled(true);
-//
-//                // Выдаем, ввиде дропа, использованые предметы
-//                dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(Items.WITHER_SKELETON_SKULL, 3));
-//
-//               BlockPos centerPos = pos.below();
-//               BlockState centerState = level.getBlockState(centerPos);
-//               ItemStack material = new ItemStack(Blocks.SOUL_SAND);
-//               if (centerState.is(Blocks.SOUL_SOIL)){
-//                   material = new ItemStack(Blocks.SOUL_SOIL);
-//               }
-//
-//               material.setCount(4);
-//                dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), material);
-//
-//                // Выводим текст игрокам вблизи призыва Визера
-//                level.players().stream()
-//                        .filter(p -> p.distanceToSqr(witherBoss.position()) < 25)
-//                        .forEach(p -> {
-//                            if (p instanceof ServerPlayer serverPlayer) {
-//                                serverPlayer.displayClientMessage(
-//                                        Component.literal("Ритуал не возможен вне Ада!"), true
-//                                );
-//                            }
-//                        });
-//
-//                level.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
-//            }
-//        }
-//    }
-
-    private static final Map<BlockPos, List<BlockState>> STRUCTURE_CACHE = new ConcurrentHashMap<>();
-
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.RightClickBlock event){
         Level level = event.getLevel();
-        if (level.isClientSide() || !event.getItemStack().is(Items.WITHER_SKELETON_SKULL)) return;
+        // Проверяем чтобы событие было на стороне сервера и в руках был череп визера
+        if(level.isClientSide() || !event.getItemStack().is(Items.WITHER_SKELETON_SKULL)) return;
+
+        // Проверяем в каком мире находимся в момент попытки призыва
+        if (level.dimension().equals(Level.NETHER)) return;
 
         BlockPos pos = event.getPos();
-        BlockPattern pattern = WitherStructure.getOrCreateWitherBase();
-        BlockPattern.BlockPatternMatch match = pattern.find(level, pos);
+        // Записывыем позицию по заготовленному полу-патерну визера
+        BlockPattern.BlockPatternMatch match = WITHER_PATTERN.find(level, pos.offset(0, 0, 0));
 
-        if (match != null){
-            List<BlockState> captured = new ArrayList<>();
+        // Проверяем на совпадения по патерну, если match что-то нашел
+        if (match != null) {
+            // Отменяем призыв визера
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
 
-            for (int i = 0; i < pattern.getWidth(); i++){
-                for (int j = 0; j < pattern.getHeight(); j++){
-                    BlockState state = match.getBlock(i, j, 0).getState();
-                    if (state.is(BlockTags.WITHER_SUMMON_BASE_BLOCKS)){
-                        captured.add(state);
+            // Используем метод с записаными блоками
+            destroyAndDrop(level, match);
+
+            // Выводим текст игрокам вблизи призыва Визера
+            if(event.getEntity() instanceof ServerPlayer sp){
+                sp.displayClientMessage(Component.literal("Ритуал не возможен вне Ада!"), true);
+            }
+
+            // Звук не удачи, для красоты
+            level.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
+        }
+    }
+
+    // Метод для уничтожения и записи блоков
+    private static void destroyAndDrop(Level level, BlockPattern.BlockPatternMatch match){
+        List<ItemStack> drops = new ArrayList<>();
+        drops.add(new ItemStack(Items.WITHER_SKELETON_SKULL, 1));
+
+        // Перебераем пространство вокруг патерна и записываем в список наши блоки
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                for (int z = 0; z < 3; z++) {
+                    BlockInWorld block = match.getBlock(x, y, z);
+                    BlockState state = block.getState();
+                    if (state.is(BlockTags.WITHER_SUMMON_BASE_BLOCKS)) {
+                        // Добавляем блоки в список
+                        drops.add(new ItemStack(state.getBlock()));
+                        // Уничтожаем записаные блоки
+                        level.destroyBlock(block.getPos(), false);
                     }
                 }
             }
-            STRUCTURE_CACHE.put(pos, captured);
+        }
+
+        // Выдаем, ввиде дропа, использованые предметы
+        BlockPos center = match.getBlock(1, 1, 0).getPos();
+        for (ItemStack stack : drops) {
+            level.addFreshEntity(new ItemEntity(level, center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5, stack));
+
         }
     }
-
-    @SubscribeEvent
-    public static void onWitherSpawn(EntityJoinLevelEvent event){
-        if (event.getEntity() instanceof WitherBoss witherBoss && !event.getLevel().isClientSide()){
-            Level level = event.getLevel();
-            if (level.dimension().equals(Level.NETHER)) return;
-
-            BlockPos spawnPos = witherBoss.blockPosition();
-
-            BlockPos key = STRUCTURE_CACHE.keySet().stream()
-                    .filter(pos -> pos.distSqr(spawnPos) < 9)
-                    .findFirst().orElse(null);
-
-            if (key != null){
-                event.setCanceled(true);
-                List<BlockState> materials = STRUCTURE_CACHE.remove(key);
-
-                for (BlockState state : materials){
-                    level.addFreshEntity(new ItemEntity(level, spawnPos.getX() + 0.5, spawnPos.getY() + 0.5, spawnPos.getZ() + 0.5, new ItemStack(state.getBlock())));
-                }
-
-                level.addFreshEntity(new ItemEntity(level, spawnPos.getX() + 0.5, spawnPos.getY() + 1.0, spawnPos.getZ() + 0.5, new ItemStack(Items.WITHER_SKELETON_SKULL)));
-
-                level.players().stream()
-                        .filter(p -> p.distanceToSqr(witherBoss.position()) < 25)
-                        .forEach(p -> {
-                            if (p instanceof ServerPlayer serverPlayer) {
-                                serverPlayer.displayClientMessage(
-                                        Component.literal("Ритуал не возможен вне Ада!"), true
-                                );
-                            }
-                        });
-
-                level.playSound(null, spawnPos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
-            }
-        }
-    }
-
-    private static class WitherStructure{
-        private static BlockPattern witherBasePattern;
-
-        private static final Predicate<BlockInWorld> IS_SOUL_BLOCK = blockInWorld -> {
-            BlockState state = blockInWorld.getState();
-            return state.is(Blocks.SOUL_SAND) || state.is(Blocks.SOUL_SOIL);
-        };
-
-        public static BlockPattern getOrCreateWitherBase(){
-            if (witherBasePattern == null){
-                witherBasePattern = BlockPatternBuilder.start()
-                        .aisle("^^^", "###", "~#~")
-                        .where('#', IS_SOUL_BLOCK)
-                        .where('^', BlockInWorld.hasState(s -> s.is(Blocks.WITHER_SKELETON_SKULL) || s.is(Blocks.WITHER_SKELETON_WALL_SKULL)))
-                        .where('~', BlockInWorld.hasState(s -> s.is(Blocks.AIR)))
-                        .build();
-            }
-            return witherBasePattern;
-        }
-    }
-
-
 }
