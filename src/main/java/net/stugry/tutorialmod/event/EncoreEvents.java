@@ -181,21 +181,66 @@ public class EncoreEvents {
             .build();
 
     // Перехват события появления визера в мире
+//    @SubscribeEvent
+//    public static void onInteract(PlayerInteractEvent.RightClickBlock event){
+//        Level level = event.getLevel();
+//        // Проверяем чтобы событие было на стороне сервера и в руках был череп визера
+//        if(level.isClientSide() || !event.getItemStack().is(Items.WITHER_SKELETON_SKULL)) return;
+//
+//        // Проверяем в каком мире находимся в момент попытки призыва
+//        if (level.dimension().equals(Level.NETHER)) return;
+//
+//        BlockPos pos = event.getPos();
+//        // Записывыем позицию по заготовленному полу-патерну визера
+//        BlockPattern.BlockPatternMatch match = WITHER_PATTERN.find(level, pos.offset(0, 0, 0));
+//
+//        // Проверяем на совпадения по патерну, если match что-то нашел
+//        if (match != null) {
+//            // Отменяем призыв визера
+//            event.setCanceled(true);
+//            event.setCancellationResult(InteractionResult.FAIL);
+//
+//            // Используем метод с записаными блоками
+//            destroyAndDrop(level, match);
+//
+//            // Выводим текст игрокам вблизи призыва Визера
+//            if(event.getEntity() instanceof ServerPlayer sp){
+//                sp.displayClientMessage(Component.literal("Ритуал не возможен вне Ада!"), true);
+//            }
+//
+//            // Звук не удачи, для красоты
+//            level.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
+//        }
+//    }
+
+
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.RightClickBlock event){
         Level level = event.getLevel();
-        // Проверяем чтобы событие было на стороне сервера и в руках был череп визера
         if(level.isClientSide() || !event.getItemStack().is(Items.WITHER_SKELETON_SKULL)) return;
 
         // Проверяем в каком мире находимся в момент попытки призыва
-        if (level.dimension().equals(Level.NETHER)) return;
 
         BlockPos pos = event.getPos();
         // Записывыем позицию по заготовленному полу-патерну визера
         BlockPattern.BlockPatternMatch match = WITHER_PATTERN.find(level, pos.offset(0, 0, 0));
 
+        if (match == null) return;
         // Проверяем на совпадения по патерну, если match что-то нашел
-        if (match != null) {
+        if (level.dimension().equals(Level.NETHER)) {
+            boolean witherExists = level.getEntitiesOfClass(WitherBoss.class, level.players().get(0).getBoundingBox().inflate(1000)).size() > 0;
+
+            if (witherExists){
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+
+                if (event.getEntity() instanceof ServerPlayer sp){
+                    sp.displayClientMessage(Component.literal("В Аду уже есть активный Иссушитель!"), true);
+                }
+                return;
+            }
+        }
+        else{
             // Отменяем призыв визера
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.FAIL);
@@ -212,6 +257,7 @@ public class EncoreEvents {
             level.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 0.5f);
         }
     }
+
 
     // Метод для уничтожения и записи блоков
     private static void destroyAndDrop(Level level, BlockPattern.BlockPatternMatch match){
