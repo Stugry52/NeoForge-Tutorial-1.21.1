@@ -19,6 +19,8 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.trading.MerchantOffer;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -34,6 +36,7 @@ import net.stugry.tutorialmod.component.ModDataComponents;
 import net.stugry.tutorialmod.event.EncoreEvents;
 import net.stugry.tutorialmod.item.ModCreativeModeTabs;
 import net.stugry.tutorialmod.item.ModItems;
+import net.stugry.tutorialmod.util.ModItemsProperties;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -114,6 +117,14 @@ public class TutorialMod {
         if (event.getTabKey().equals(CreativeModeTabs.BUILDING_BLOCKS)) {
             event.accept(ModBlocks.BISMUTH_BLOCK);
             event.accept(ModBlocks.BISMUTH_ORE);
+        }
+    }
+
+    @EventBusSubscriber(modid = MOD_ID, value = Dist.CLIENT)
+    public static class ClientModEvents{
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event){
+            ModItemsProperties.addCustomItemProperties();
         }
     }
 
